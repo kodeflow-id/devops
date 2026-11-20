@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevOps dari Nol — Slide Kursus</title>
+<meta name="description" content="Slide interaktif kursus DevOps untuk pemula: Linux, Nginx, reverse proxy, Docker, GitHub Actions.">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=erode@400,401,500,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#111111;--surface:#1c1c1c;--surface-2:#232323;
+  --ink:#f2f2f2;--muted:#a3a3a3;--accent:#b39b85;--accent-ink:#111111;
+  --line:#2e2e2e;
+  --margin:clamp(16px,2vw,28px);--gap:clamp(16px,2vw,28px);
+  --step-small:clamp(0.8125rem,0.79rem + 0.1vw,0.875rem);
+  --step-body:clamp(1.0625rem,1rem + 0.25vw,1.1875rem);
+  --step-lead:clamp(1.25rem,1.1rem + 0.7vw,1.625rem);
+  --step-head:clamp(2rem,1.3rem + 3.2vw,4rem);
+  --ease-out:cubic-bezier(0.16,1,0.3,1);--t-hover:240ms;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:'Erode',Georgia,serif;font-size:var(--step-body);line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,p,ul{margin:0}
+ul{list-style:none;padding:0}
+::selection{background:var(--accent);color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* ---------- chrome ---------- */
+.bar{position:fixed;top:0;left:0;height:2px;background:var(--accent);width:0;z-index:60;transition:width 320ms var(--ease-out)}
+.hud{
+  position:fixed;bottom:var(--margin);right:var(--margin);z-index:50;
+  display:flex;align-items:center;gap:12px;font-size:var(--step-small);color:var(--muted);
+  font-variant-numeric:tabular-nums;
+}
+.hud .count{min-width:5.5ch;text-align:right}
+.ibtn{
+  min-height:44px;min-width:44px;padding:0 16px;background:var(--surface);color:var(--ink);
+  border:1px solid var(--line);font:inherit;font-size:var(--step-small);
+  cursor:pointer;transition:transform var(--t-hover) var(--ease-out),background var(--t-hover) var(--ease-out);
+}
+.ibtn:hover{transform:translateY(-2px);background:var(--surface-2)}
+.ibtn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.dots{position:fixed;left:var(--margin);bottom:var(--margin);z-index:50;display:flex;gap:10px}
+.dot{
+  width:34px;height:6px;border:0;padding:0;background:#3c3c3c;cursor:pointer;
+  transition:background var(--t-hover) var(--ease-out),transform var(--t-hover) var(--ease-out);
+}
+.dot:hover{transform:translateY(-2px)}
+.dot.on{background:var(--accent)}
+.hint{position:fixed;top:var(--margin);right:var(--margin);z-index:50;font-size:var(--step-small);color:var(--muted);text-align:right;line-height:1.7}
+kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85em;background:var(--surface);
+  border:1px solid var(--line);padding:1px 6px;color:var(--ink)}
+
+/* ---------- slides ---------- */
+.deck{position:relative;height:100svh}
+.slide{
+  position:absolute;inset:0;padding:clamp(28px,4.5vw,72px) clamp(20px,4vw,72px) clamp(72px,9vh,110px);
+  display:grid;grid-template-rows:auto 1fr auto;gap:clamp(16px,3vh,40px);
+  opacity:0;transform:translateY(20px);pointer-events:none;
+  transition:opacity 420ms var(--ease-out),transform 420ms var(--ease-out);
+}
+.slide.on{opacity:1;transform:none;pointer-events:auto}
+.slide-head{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline;
+  font-size:var(--step-small);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.slide-head b{color:var(--accent);font-weight:600}
+.body{display:grid;grid-template-columns:repeat(12,1fr);gap:clamp(24px,3vw,56px);align-content:center;min-height:0}
+.left{grid-column:1/7;display:flex;flex-direction:column;gap:clamp(14px,2.4vh,26px);min-width:0}
+.right{grid-column:8/13;display:flex;flex-direction:column;justify-content:center;gap:18px;min-width:0}
+h2.t{font-size:var(--step-head);font-weight:500;letter-spacing:-0.03em;line-height:1.02}
+h2.t em{font-style:normal;background:var(--accent);color:var(--accent-ink);padding:0 .16em;
+  box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.pts li{position:relative;padding-left:26px;margin-bottom:12px;color:var(--ink);line-height:1.5;max-width:46ch}
+.pts li::before{content:"";position:absolute;left:0;top:.62em;width:12px;height:2px;background:var(--accent)}
+.pts li span{color:var(--muted)}
+pre{
+  margin:0;background:var(--surface);border:1px solid var(--line);padding:20px 22px;
+  overflow-x:auto;font:var(--step-small)/1.75 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color:var(--ink);
+}
+pre .c{color:var(--muted)}
+pre .k{color:var(--accent)}
+.slide-foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px 28px;
+  font-size:var(--step-small);color:var(--muted);align-items:baseline}
+.slide-foot strong{color:var(--ink);font-weight:600}
+
+/* ---------- title / divider / end ---------- */
+.hero-slide{align-content:space-between}
+.brand{font-size:clamp(52px,9vw,132px);font-weight:500;letter-spacing:-0.035em;line-height:.95}
+.brand span{background:var(--accent);color:var(--accent-ink);padding:0 .12em;
+  box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.lede{max-width:44ch;margin-top:22px;font-size:var(--step-lead);color:var(--muted);line-height:1.45}
+.meta-row{display:flex;flex-wrap:wrap;gap:14px 44px;font-size:var(--step-small);color:var(--muted);
+  border-top:1px solid var(--line);padding-top:20px}
+.meta-row strong{display:block;color:var(--ink);font-weight:600;font-size:var(--step-body);
+  font-variant-numeric:tabular-nums}
+.actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:28px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 28px;
+  background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600;border:0;cursor:pointer;
+  transition:transform var(--t-hover) var(--ease-out);
+}
+.btn:hover{transform:translateY(-2px)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.divider-num{font-size:clamp(64px,11vw,168px);font-weight:500;letter-spacing:-0.04em;color:var(--accent);line-height:.9}
+.divider-list{columns:2;column-gap:40px;font-size:var(--step-body);color:var(--muted);margin-top:8px}
+.divider-list li{padding:5px 0;break-inside:avoid}
+.divider-list li b{color:var(--ink);font-weight:600;margin-right:10px;font-variant-numeric:tabular-nums}
+
+/* ---------- overview ---------- */
+.grid-view{
+  position:fixed;inset:0;z-index:70;background:rgba(17,17,17,.97);
+  padding:clamp(20px,4vw,56px);overflow:auto;display:none;
+}
+body.overview .grid-view{display:block}
+.grid-view header{display:flex;justify-content:space-between;align-items:baseline;gap:20px;margin-bottom:28px}
+.grid-view h2{font-size:var(--step-lead);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.card{
+  text-align:left;background:var(--surface);border:1px solid var(--line);color:var(--ink);
+  font:inherit;padding:16px 18px;cursor:pointer;display:flex;flex-direction:column;gap:6px;
+  transition:transform var(--t-hover) var(--ease-out),border-color var(--t-hover) var(--ease-out);
+}
+.card:hover{transform:translateY(-3px);border-color:var(--accent)}
+.card small{font-size:var(--step-small);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.card b{font-weight:500;font-size:1.02em;line-height:1.3}
+.card.current{border-color:var(--accent)}
+.card.current small{color:var(--accent)}
+
+@media (max-width:1024px){
+  .left{grid-column:1/13}
+  .right{grid-column:1/13}
+  .divider-list{columns:1}
+}
+@media (max-width:800px){
+  .hint,.dots{display:none}
+  .slide{padding-bottom:96px}
+  .body{gap:20px}
+  h2.t{font-size:clamp(1.7rem,7vw,2.4rem)}
+  .hud{left:var(--margin);justify-content:space-between}
+}
+@media (prefers-reduced-motion:reduce){
+  .slide,.bar{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+
+<div class="hint">
+  <kbd>←</kbd> <kbd>→</kbd> navigasi · <kbd>G</kbd> overview · <kbd>F</kbd> layar penuh
+</div>
+<div class="dots" id="dots" aria-label="Lompat ke modul"></div>
+<div class="hud">
+  <button class="ibtn" id="prev" aria-label="Slide sebelumnya">← Sebelumnya</button>
+  <span class="count" id="count">1 / 1</span>
+  <button class="ibtn" id="next" aria-label="Slide berikutnya">Berikutnya →</button>
+</div>
+
+<div class="grid-view" id="gridView" role="dialog" aria-label="Semua slide">
+  <header>
+    <h2>Semua slide</h2>
+    <button class="ibtn" id="closeGrid">Tutup (Esc)</button>
+  </header>
+  <div class="grid" id="grid"></div>
+</div>
+
+<main class="deck" id="deck"></main>
+
+<script>
+/* ============================================================
+   Data slide. kind: hero | agenda | divider | lesson | end
+   ============================================================ */
+const M = [
+  {n:'Modul 0', t:'Persiapan: VPS dan domain', range:'Pelajaran 0.1–0.2',
+   sub:'Punya server yang bisa di-SSH dan domain yang mengarah ke sana.'},
+  {n:'Modul 1', t:'Dasar Linux di server', range:'Pelajaran 1–8',
+   sub:'Terminal, izin file, systemd, firewall, git di server.'},
+  {n:'Modul 2', t:'Satu pintu masuk: Nginx dan reverse proxy', range:'Pelajaran 9–16',
+   sub:'Publikasikan aplikasi lokal sebagai HTTPS dengan satu pintu.'},
+  {n:'Modul 3', t:'Bawa aplikasi ke mana saja: Docker', range:'Pelajaran 17–24',
+   sub:'Kemas aplikasi + dependensinya, kelola data dan network.'},
+  {n:'Modul 4', t:'Rilis tanpa tangan: GitHub Actions', range:'Pelajaran 25–32',
+   sub:'Test, build, push image, deploy ke VPS otomatis.'},
+  {n:'Modul 5', t:'Proyek akhir: deploy nyata', range:'Pelajaran 33–38',
+   sub:'Rantai lengkap plus latihan menghadapi insiden.'}
+];
+
+const DECK = [
+  {kind:'hero', t:'DevOps dari Nol', sub:'Linux · Nginx · Reverse proxy · Docker · GitHub Actions',
+   lede:'Kursus untuk pemula: belum pernah menyentuh server pun tidak masalah. Dimulai dari membeli VPS dan domain, lalu terminal, Nginx sebagai reverse proxy, container Docker, sampai pipeline CI/CD yang merilis otomatis.',
+   meta:[['Kelas','40'],['Pertemuan','41'],['Modul','6'],['Tingkat','Pemula'],['Durasi/kelas','90 menit']],
+   foot:'Tekan → untuk mulai · G untuk lihat semua slide'},
+
+  {kind:'agenda', t:'Peta kursus', pts:[
+    'Modul 0 — Persiapan. Buat VPS, login pertama, beli domain, arahkan DNS ke server.',
+    'Modul 1 — Dasar Linux. Terminal, permission, systemd, firewall, git di server.',
+    'Modul 2 — Nginx & reverse proxy. Server block, header, HTTPS, load balancing.',
+    'Modul 3 — Docker. Dockerfile multi-stage, volume, network, Compose.',
+    'Modul 4 — GitHub Actions. Test, GHCR, deploy SSH, rollback.',
+    'Modul 5 — Proyek akhir. Deploy nyata + simulasi insiden.']},
+
+  {kind:'agenda', label:'Cara kelas berjalan', t:'Alur tiap pertemuan', pts:[
+    '10 menit pertama: <b>bahas tugas</b> minggu lalu — tiap orang menunjukkan bukti.',
+    '60 menit materi + demo, lalu 15 menit praktik terbimbing di VPS sendiri.',
+    '5 menit terakhir: tugas baru dijelaskan, termasuk bukti yang harus dibawa.',
+    'Tugas selalu memakai server sendiri, bukan studi kasus fiktif.',
+    'Tidak ada tugas minggu lalu = tidak bisa mengikuti praktik minggu ini.']},
+
+  {kind:'divider', mi:0},
+
+  {kind:'lesson', mi:0, n:'Pelajaran 0.1', t:'Membuat VPS dari nol', pts:[
+    'Pilih penyedia + region Jakarta/Singapore, image <b>Ubuntu 24.04 LTS</b>.',
+    'Catat IP publik, user awal, dan port SSH sebelum melakukan apa pun.',
+    'Instance yang dimatikan <b>tetap ditagih</b>; destroy untuk menghentikannya.',
+    'Swap 2 GB bila RAM ≤ 2 GB, supaya build Docker tidak kena OOM killer.'],
+   code:'<span class="c"># login pertama + verifikasi resource</span>\nssh root@203.0.113.10\nfree -h\nnproc\ndf -h /'},
+  {kind:'lesson', mi:0, n:'Pelajaran 0.2', t:'Domain dan DNS', pts:[
+    'Domain dibeli di registrar; DNS bisa dikelola di sana atau dipindah lewat <b>NS</b>.',
+    'Tambahkan record <b>A</b>: name <code>app</code>, value IP server, TTL 300.',
+    'Verifikasi dengan <b>dig</b> dari dua resolver — jangan hanya resolver lokal.',
+    'Matikan proxy CDN saat menerbitkan sertifikat, kalau tidak HTTP-01 gagal.'],
+   code:'dig +short app.example.com\ndig @1.1.1.1 +short app.example.com\ngetent hosts app.example.com'},
+
+  {kind:'divider', mi:1},
+
+  {kind:'lesson', mi:1, n:'Pelajaran 1.1', t:'Terminal dan shell', pts:[
+    'Prompt <b>#</b> berarti root, <b>$</b> berarti user biasa.',
+    '<b>PATH</b> menentukan di mana shell mencari perintah.',
+    '<b>export</b> mewariskan variabel ke proses anak.',
+    'Biasakan <b>man</b> dan <b>--help</b> sebelum mencari di internet.'],
+   code:'man ls\n<span class="k">export</span> APP_ENV=production\nAPP_ENV=staging bash -c \'echo $APP_ENV\''},
+  {kind:'lesson', mi:1, n:'Pelajaran 1.2', t:'Filesystem dan navigasi', pts:[
+    'Satu pohon direktori dari <b>/</b> — tidak ada drive huruf.',
+    '<b>/etc</b> konfigurasi, <b>/var/log</b> log, <b>/var/www</b> situs, <b>/opt</b> aplikasi.',
+    '<b>find</b> mencari atribut file, <b>grep</b> mencari isi.',
+    'Cek disk rutin: <b>df -h</b> dan <b>du -sh</b>.'],
+   code:'find /etc -name \'*.conf\' -type f\nsudo grep -rn "server_name" /etc/nginx\ndu -sh /var/log/* | sort -h | tail -5'},
+  {kind:'lesson', mi:1, n:'Pelajaran 1.3', t:'File dan teks', pts:[
+    'Redirect <b>&gt;</b> menimpa, <b>&gt;&gt;</b> menambah, <b>2&gt;&amp;1</b> menggabung stderr.',
+    '<b>|</b> menyambung stdout ke stdin proses berikutnya.',
+    'Peralatan harian: sed, cut, awk, sort, uniq, tar, curl.',
+    'Simpan bukti deploy: <b>... 2&gt;&amp;1 | tee deploy.log</b>.'],
+   code:'tar -czf backup.tar.gz /etc/ssh\ncurl -s -o /dev/null -w \'%{http_code}\\n\' https://example.com\ndocker compose up -d 2&gt;&amp;1 | tee deploy.log'},
+  {kind:'lesson', mi:1, n:'Pelajaran 1.4', t:'User, grup, permission, dan SSH', pts:[
+    'Oktal: <b>640</b> = owner rw, group r, other tidak ada akses.',
+    'Direktori butuh bit <b>x</b> agar bisa dimasuki.',
+    'Perbaiki kepemilikan dengan <b>chown</b>, bukan <b>chmod 777</b>.',
+    'Hardening lewat drop-in <b>99-hardening.conf</b>, buktikan dengan <b>sshd -T</b>.'],
+   code:'sudo tee /etc/ssh/sshd_config.d/99-hardening.conf &lt;&lt;\'CONF\'\nPasswordAuthentication no\nCONF\nsudo sshd -T | grep -i passwordauth'},
+  {kind:'lesson', mi:1, n:'Pelajaran 1.5', t:'Proses, service, dan systemd', pts:[
+    '<b>enable</b> mengaktifkan saat boot, <b>start</b> menjalankan sekarang.',
+    'Unit file: ExecStart, User, WorkingDirectory, <b>Restart=on-failure</b>.',
+    'Log service ada di journal: <b>journalctl -u nama</b>.',
+    'SIGTERM minta berhenti baik-baik; SIGKILL paksa.'],
+   code:'sudo systemctl enable --now hello\nsystemctl status hello --no-pager\njournalctl -u hello -n 50 --no-pager'},
+  {kind:'lesson', mi:1, n:'Pelajaran 1.6', t:'Manajemen paket dan update keamanan', pts:[
+    '<b>apt update</b> menyegarkan indeks, <b>apt upgrade</b> memasang versi baru.',
+    'Aktifkan <b>unattended-upgrades</b> untuk patch keamanan.',
+    'Reboot tertunda ditandai <b>/var/run/reboot-required</b>.',
+    'Repo pihak ketiga: key di <b>/etc/apt/keyrings</b>, sumber di <b>sources.list.d</b>.'],
+   code:'sudo apt update\napt list --upgradable\ncat /var/run/reboot-required 2&gt;/dev/null || echo "tidak perlu reboot"'},
+  {kind:'lesson', mi:1, n:'Pelajaran 1.7', t:'Jaringan dan firewall', pts:[
+    'Baca IP dan port: <b>ip -brief address</b>, <b>ss -tulpn</b>.',
+    '<b>ufw allow OpenSSH</b> SEBELUM <b>ufw enable</b>, atau kamu terkunci.',
+    'Docker melewati <b>ufw</b>: publish selalu ke <b>127.0.0.1</b>.',
+    'Buktikan dari luar: <b>nc -zv IP 3000</b> harus gagal.'],
+   code:'sudo ufw allow OpenSSH &amp;&amp; sudo ufw allow 80/tcp\nsudo ufw enable\nsudo ss -tulpn | grep LISTEN'},
+  {kind:'lesson', mi:1, n:'Pelajaran 1.8', t:'Git di server', pts:[
+    'Deploy key <b>read-only</b> per repo, bukan key pribadi.',
+    '<b>git pull --ff-only</b> menolak merge otomatis — itu fitur.',
+    'Jangan mengedit langsung di server: perubahan hilang saat redeploy.',
+    'Lihat dulu apa yang akan berubah: <b>git diff --stat HEAD origin/main</b>.'],
+   code:'ssh -T git@github.com\ncd ~/apps/app &amp;&amp; git fetch --all &amp;&amp; git pull --ff-only'},
+
+  {kind:'divider', mi:2},
+
+  {kind:'lesson', mi:2, n:'Pelajaran 2.1', t:'HTTP dan cara kerja web server', pts:[
+    'Status yang wajib dikenal: 200, 301, 403, 404, 413, 499, <b>502</b>, <b>504</b>.',
+    'Header penentu: Host, X-Real-IP, X-Forwarded-For, X-Forwarded-Proto.',
+    'Urutan debug: DNS → firewall → port → proses → Nginx → aplikasi.',
+    'Tiap lapisan dibuktikan satu perintah, bukan ditebak.'],
+   code:'curl -sI https://example.com\ncurl -s -o /dev/null -w \'code=%{http_code} time=%{time_total}s\\n\' https://example.com'},
+  {kind:'lesson', mi:2, n:'Pelajaran 2.2', t:'Instalasi dan struktur konfigurasi Nginx', pts:[
+    '<b>sites-available</b> menyimpan, <b>sites-enabled</b> mengaktifkan lewat symlink.',
+    'Alur wajib: edit → <b>sudo nginx -t</b> → <b>systemctl reload nginx</b>.',
+    'Reload tidak memutus koneksi; restart memutus.',
+    'Log: <b>/var/log/nginx/access.log</b> dan <b>error.log</b>.'],
+   code:'sudo nginx -t &amp;&amp; sudo systemctl reload nginx\nsudo tail -f /var/log/nginx/error.log'},
+  {kind:'lesson', mi:2, n:'Pelajaran 2.3', t:'Situs statis pertama', pts:[
+    'Pola standar: <b>try_files $uri $uri/ =404;</b>',
+    'Nginx berjalan sebagai <b>www-data</b> — butuh izin <b>x</b> di setiap direktori path.',
+    '403 hampir selalu soal izin direktori, bukan file.',
+    'SPA: <b>try_files $uri /index.html;</b>'],
+   code:'namei -l /var/www/demo/index.html\nsudo -u www-data cat /var/www/demo/index.html &gt;/dev/null &amp;&amp; echo bisa-baca'},
+  {kind:'lesson', mi:2, n:'Pelajaran 2.4', t:'Server block dan domain', pts:[
+    '<b>server_name</b> mencocokkan header Host; <b>default_server</b> menangkap sisanya.',
+    'Nama tak dikenal: <b>return 444</b> (tutup tanpa balasan).',
+    'Satu blok port 80 untuk redirect HTTP→HTTPS sekaligus normalisasi www.',
+    'Dua blok dengan server_name sama = <b>conflicting server name</b>.'],
+   code:'curl -sI -H \'Host: app.example.com\' http://127.0.0.1\ncurl -sI -H \'Host: tidak-dikenal.local\' http://127.0.0.1'},
+  {kind:'lesson', mi:2, n:'Pelajaran 2.5', t:'location dan routing', pts:[
+    'Urutan: <b>=</b> persis → <b>^~</b> prefix → regex <b>~</b> → prefix terpanjang.',
+    '<b>root</b> menempelkan URI; <b>alias</b> menggantinya (samakan trailing slash).',
+    '<b>return 301</b> lebih murah daripada <b>rewrite</b> untuk redirect domain.',
+    'Halaman error kustom: <b>error_page 404</b> + <b>internal</b>.'],
+   code:'location /media/ { alias /srv/photos/; }\nlocation = /health { return 200 "ok\\n"; }'},
+  {kind:'lesson', mi:2, n:'Pelajaran 2.6', t:'Reverse proxy', pts:[
+    '<b>proxy_pass</b> + empat header wajib (Host, X-Real-IP, X-Forwarded-For, X-Forwarded-Proto).',
+    'WebSocket butuh <b>map $http_upgrade $connection_upgrade</b> di blok http.',
+    'Backend listen di <b>127.0.0.1</b>, bukan 0.0.0.0.',
+    'Tanpa X-Forwarded-Proto, aplikasi membuat tautan http:// di halaman HTTPS.'],
+   code:'proxy_set_header Host              $host;\nproxy_set_header X-Real-IP         $remote_addr;\nproxy_set_header X-Forwarded-Proto $scheme;'},
+  {kind:'lesson', mi:2, n:'Pelajaran 2.7', t:'HTTPS dengan Let\'s Encrypt', pts:[
+    'Validasi HTTP-01: port 80 harus terbuka dan DNS sudah benar.',
+    '<b>certbot --nginx -d domain --redirect</b> mengurus sertifikat + redirect.',
+    'Perpanjangan otomatis: timer systemd + <b>certbot renew --dry-run</b>.',
+    'HSTS <b>includeSubDomains</b> hanya setelah semua subdomain siap HTTPS.'],
+   code:'sudo certbot --nginx -d app.example.com --redirect\nsudo certbot renew --dry-run'},
+  {kind:'lesson', mi:2, n:'Pelajaran 2.8', t:'Load balancing, proteksi, dan tuning', pts:[
+    '<b>upstream</b> + <b>least_conn</b>; <b>ip_hash</b> bila sesi tersimpan di memori backend.',
+    '<b>limit_req_zone</b> di blok http, dipakai dengan <b>limit_req</b> di location.',
+    '<b>client_max_body_size</b> default 1 MB — penyebab tersembunyi error 413.',
+    'Diagnosis cepat: 502 cek backend, 504 cek timeout, 403 cek izin path.'],
+   code:'limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;\nlimit_req zone=api_limit burst=20 nodelay;\nclient_max_body_size 25m;'},
+
+  {kind:'divider', mi:3},
+
+  {kind:'lesson', mi:3, n:'Pelajaran 3.1', t:'Kenapa container', pts:[
+    'Image = cetakan read-only; container = proses yang berjalan darinya.',
+    'Container berbagi kernel host: ringan, tapi isolasinya lebih lemah dari VM.',
+    'Registry menyimpan image, volume menyimpan data.',
+    'Kapan tidak dipakai: aplikasi tunggal sederhana, kebutuhan kernel khusus.'],
+   code:'docker run --rm alpine uname -r\ndocker run --rm alpine cat /etc/os-release | head -2'},
+  {kind:'lesson', mi:3, n:'Pelajaran 3.2', t:'Instalasi dan verifikasi', pts:[
+    'Pakai <b>docker-ce</b> dari repo resmi, bukan paket bawaan yang tertinggal versi.',
+    'Grup <b>docker</b> setara root — batasi anggotanya.',
+    'Log rotation di <b>/etc/docker/daemon.json</b> supaya disk tidak penuh.',
+    'Compose v2: perintahnya <b>docker compose</b>, bukan docker-compose.'],
+   code:'docker version\ndocker compose version\ndocker system df'},
+  {kind:'lesson', mi:3, n:'Pelajaran 3.3', t:'Image dan container sehari-hari', pts:[
+    'Opsi inti: <b>-d -p -e -v --name --rm --restart</b>.',
+    '<b>Exited (0)</b> selesai normal, <b>Exited (1)</b> error, <b>Restarting</b> crash loop.',
+    'Aplikasi sebaiknya menulis log ke stdout: <b>docker logs</b> jadi sumber tunggal.',
+    '<b>docker system prune -a --volumes</b> bisa menghapus volume database.'],
+   code:'docker run -d --name api -p 127.0.0.1:3000:80 nginx:1.27-alpine\ndocker logs -f --tail 50 api\ndocker inspect -f \'{{.State.Status}}\' api'},
+  {kind:'lesson', mi:3, n:'Pelajaran 3.4', t:'Dockerfile pertama', pts:[
+    'Urutan cache: salin manifest → install → baru salin kode.',
+    '<b>.dockerignore</b> mengecilkan konteks build dan mencegah .env ikut masuk.',
+    '<b>CMD</b> bisa ditimpa penuh, <b>ENTRYPOINT</b> tetap dan argumen run menempel.',
+    'Uji build dan jalankan lokal sebelum menyentuh server.'],
+   code:'FROM node:22-alpine\nWORKDIR /app\nCOPY package.json ./\nRUN npm install --omit=dev\nCOPY server.js ./\nCMD ["node", "server.js"]'},
+  {kind:'lesson', mi:3, n:'Pelajaran 3.5', t:'Image kecil dan aman', pts:[
+    'Multi-stage + <b>COPY --from=build</b>; tahap build tanpa COPY adalah tahap mati.',
+    'Jalankan sebagai non-root: <b>USER node</b>.',
+    'Pin versi: <b>node:22.11-alpine3.20</b>, hindari <b>latest</b>.',
+    'Rahasia tidak pernah di ENV/RUN — layer image bisa dibaca siapa pun.'],
+   code:'FROM node:22-alpine AS build\nRUN npm install --omit=dev\n\nFROM node:22-alpine\nCOPY --from=build /app/node_modules ./node_modules\nUSER node'},
+  {kind:'lesson', mi:3, n:'Pelajaran 3.6', t:'Data dan konfigurasi', pts:[
+    'Container dihapus = datanya hilang; gunakan <b>volume</b>.',
+    'Bind mount host menang atas isi image — hati-hati mounting direktori kode.',
+    '<b>.env</b> mode 600 dan masuk <b>.gitignore</b>.',
+    'Konfigurasi runtime lewat <b>--env-file</b>, bukan dibakar ke image.'],
+   code:'docker volume create appdata\ndocker run -d --env-file .env --name api app:2.0.0\ndocker volume inspect appdata'},
+  {kind:'lesson', mi:3, n:'Pelajaran 3.7', t:'Network dan koneksi antar-container', pts:[
+    'Custom bridge memberi DNS internal: panggil backend dengan <b>nama service</b>, bukan IP.',
+    'Publish hanya ke <b>127.0.0.1</b>; database tidak dipublish sama sekali.',
+    '<b>ufw</b> tidak mengatur port yang di-publish Docker (aturan DNAT mendahului INPUT).',
+    '<b>EXPOSE</b> cuma dokumentasi; akses dari host tetap butuh <b>-p</b>.'],
+   code:'docker network create appnet\ndocker run -d --name db --network appnet postgres:16-alpine\ndocker run --rm --network appnet alpine getent hosts db'},
+  {kind:'lesson', mi:3, n:'Pelajaran 3.8', t:'Docker Compose', pts:[
+    'Satu file: services, image/build, ports, volumes, environment, healthcheck.',
+    '<b>depends_on: condition: service_healthy</b> menunggu database benar-benar siap.',
+    '<b>restart: unless-stopped</b> membuat stack hidup lagi setelah reboot.',
+    '<b>down -v</b> menghapus volume — data hilang.'],
+   code:'docker compose config --quiet &amp;&amp; docker compose up -d\ndocker compose ps\ndocker compose logs -f --tail 30 api'},
+
+  {kind:'divider', mi:4},
+
+  {kind:'lesson', mi:4, n:'Pelajaran 4.1', t:'Konsep CI/CD dan komponen Actions', pts:[
+    'CI menguji tiap perubahan; continuous deployment merilis yang lulus.',
+    'Workflow → event → job → step → runner; action dipanggil dengan <b>uses</b>.',
+    'Runner selalu VM bersih: jangan mengandalkan file dari job lain.',
+    'Job default paralel; urutkan dengan <b>needs</b>.'],
+   code:'name: CI\non:\n  push:\n    branches: [main]\n  workflow_dispatch:'},
+  {kind:'lesson', mi:4, n:'Pelajaran 4.2', t:'Workflow pertama', pts:[
+    'YAML memakai spasi, bukan Tab; indentasi salah = workflow tidak jalan.',
+    '<b>actions/checkout</b> hampir selalu step pertama.',
+    'Perintah di CI harus bisa dijalankan lokal — debug di laptop jauh lebih cepat.',
+    'Baca log per step; exit code menunjukkan titik gagal.'],
+   code:'- uses: actions/checkout@v4\n- uses: actions/setup-node@v4\n  with: { node-version: \'22\', cache: npm }\n- run: npm ci &amp;&amp; npm test'},
+  {kind:'lesson', mi:4, n:'Pelajaran 4.3', t:'Test dan lint otomatis', pts:[
+    '<b>matrix</b> menjalankan kombinasi versi; <b>fail-fast: false</b> melihat semua kegagalan.',
+    '<b>cache: npm</b> memangkas waktu install di tiap run.',
+    'Branch protection: PR tidak bisa di-merge sebelum status check hijau.',
+    'Pisahkan job lint dan test supaya terlihat paralel.'],
+   code:'strategy:\n  fail-fast: false\n  matrix:\n    node: [\'20\', \'22\']'},
+  {kind:'lesson', mi:4, n:'Pelajaran 4.4', t:'Secret, variable, dan environment', pts:[
+    '<b>secrets</b> terenkripsi dan di-mask; <b>vars</b> bukan rahasia.',
+    '<b>GITHUB_TOKEN</b> hanya hidup selama run — lebih aman daripada PAT.',
+    'Environment + required reviewers menahan deploy sampai disetujui.',
+    'Least privilege: <b>permissions: contents: read</b>, naikkan hanya di job yang butuh.'],
+   code:'permissions:\n  contents: read\njobs:\n  publish:\n    permissions:\n      contents: read\n      packages: write'},
+  {kind:'lesson', mi:4, n:'Pelajaran 4.5', t:'Build dan push image ke GHCR', pts:[
+    'Login GHCR memakai <b>GITHUB_TOKEN</b> + izin <b>packages: write</b>.',
+    'Tag <b>sha</b> untuk rollback presisi; <b>latest</b> jangan jadi acuan deploy.',
+    '<b>type=sha,format=long</b> agar cocok dengan head_sha 40 karakter.',
+    'Cache <b>type=gha</b> membuat build berikutnya jauh lebih cepat.'],
+   code:'tags: |\n  type=sha,prefix=sha-,format=long\ncache-from: type=gha\ncache-to: type=gha,mode=max'},
+  {kind:'lesson', mi:4, n:'Pelajaran 4.6', t:'Deploy ke VPS lewat SSH', pts:[
+    'Server menarik image, bukan membangunnya.',
+    'Key SSH khusus deploy, tanpa passphrase, disimpan sebagai secret.',
+    'Token dikirim lewat <b>envs:</b>, jangan ditempel ke skrip remote.',
+    'Health check setelah <b>up -d</b> menentukan deploy dianggap sukses.'],
+   code:'envs: GHCR_TOKEN\nscript: |\n  set -e\n  cd ~/apps/app\n  docker compose pull &amp;&amp; docker compose up -d --remove-orphans'},
+  {kind:'lesson', mi:4, n:'Pelajaran 4.7', t:'Deploy aman dan rollback', pts:[
+    'Health check + smoke test = penentu sukses, bukan sekadar exit code 0.',
+    'Rollback adalah deploy tag sebelumnya, bukan memperbaiki di server.',
+    '<b>concurrency</b> mencegah dua deploy bertabrakan.',
+    'Deploy hanya dari <b>main</b> atau tag rilis, bukan dari PR.'],
+   code:'concurrency:\n  group: deploy-production\n  cancel-in-progress: false\n\n./deploy.sh ghcr.io/USER/REPO:sha-&lt;commit&gt;'},
+  {kind:'lesson', mi:4, n:'Pelajaran 4.8', t:'Menaikkan level', pts:[
+    'Reusable workflow (<b>workflow_call</b>) untuk keseluruhan job yang berulang.',
+    'Composite action untuk beberapa step yang dipakai berulang.',
+    '<b>needs</b> + <b>outputs</b> mengurutkan job dan berbagi nilai.',
+    'Badge status di README + notifikasi saat deploy gagal.'],
+   code:'- name: Notifikasi gagal\n  if: failure()\n  run: curl -fsS -X POST "$DISCORD_WEBHOOK" -d \'{"content":"deploy gagal"}\''},
+
+  {kind:'divider', mi:5},
+
+  {kind:'lesson', mi:5, n:'Pelajaran 5.1', t:'Menyiapkan server dan DNS', pts:[
+    'Instance VPS → user deploy → SSH key-only → ufw 22/80/443.',
+    'Record A harus mengarah ke IP server sebelum meminta sertifikat.',
+    'Verifikasi satu blok: user, firewall, Docker, Nginx, DNS.',
+    'Console panel adalah jalur darurat kalau SSH terkunci.'],
+   code:'ssh deploy@203.0.113.10 \'whoami; sudo ufw status | head -8; docker --version\'\ndig +short app.example.com'},
+  {kind:'lesson', mi:5, n:'Pelajaran 5.2', t:'Menyiapkan aplikasi dan image', pts:[
+    'Image diambil dari registry; server tidak build.',
+    'Endpoint <b>/health</b> wajib ada — dipakai pipeline dan monitoring.',
+    'Buktikan image bersih dari rahasia sebelum dipush.',
+    'Compose versi server memakai <b>image: ${IMAGE}</b>, bukan build.',
+    ],
+   code:'docker run --rm --entrypoint env app:local | grep -iE \'pass|secret|token\' || echo bersih\ndocker compose config --quiet'},
+  {kind:'lesson', mi:5, n:'Pelajaran 5.3', t:'Nginx reverse proxy dan HTTPS', pts:[
+    'Reverse proxy + header + WebSocket, lalu HTTPS + redirect.',
+    'Header keamanan dan <b>client_max_body_size</b> untuk upload.',
+    'Port backend harus tertutup dari internet (uji dengan nc dari luar).',
+    '<b>certbot renew --dry-run</b> membuktikan perpanjangan otomatis jalan.'],
+   code:'sudo nginx -t &amp;&amp; sudo systemctl reload nginx\ncurl -sI https://app.example.com | head -3\ncurl -s -o /dev/null -w \'%{http_code}\\n\' http://app.example.com  <span class="c"># 301</span>'},
+  {kind:'lesson', mi:5, n:'Pelajaran 5.4', t:'Pipeline CI/CD', pts:[
+    'Tiga workflow: CI, release (build & push), deploy (<b>workflow_run</b>).',
+    'Secrets: SSH_HOST, SSH_USER, SSH_KEY, GHCR_TOKEN, webhook opsional.',
+    'Environment production + required reviewer bila ingin gerbang manual.',
+    'Tag image di server harus sama dengan commit yang baru dipush.'],
+   code:'git commit --allow-empty -m "chore: uji pipeline" &amp;&amp; git push\nssh deploy@IP \'cd ~/apps/app &amp;&amp; cat .env &amp;&amp; docker compose ps\''},
+  {kind:'lesson', mi:5, n:'Pelajaran 5.5', t:'Go-live dan observability', pts:[
+    'Checklist go-live: DNS, Nginx, cert, firewall, container sehat, log bersih.',
+    'Backup database baru dianggap ada setelah pernah diuji restore.',
+    'Pantau disk: image dan log Docker adalah pemakan ruang terbesar.',
+    'Skrip kesehatan + disk tiap 15 menit lewat systemd timer.'],
+   code:'df -h /; du -sh /var/lib/docker /var/log\ndocker system df\nsystemctl list-timers | grep certbot'},
+  {kind:'lesson', mi:5, n:'Pelajaran 5.6', t:'Simulasi insiden dan demo', pts:[
+    'Alur diagnosis: gejala → lapisan → bukti per lapisan → ubah satu hal.',
+    'Lima insiden: 502, restart loop, deploy basi, cert expired, disk penuh.',
+    'Setelah pulih: tulis penyebab dan pencegahan, bukan hanya "sudah normal".',
+    'Demo akhir: deploy, rollback, dan satu insiden didiagnosis di depan penguji.'],
+   code:'docker compose ps\ndocker compose logs --tail 50 api\nsudo tail -50 /var/log/nginx/error.log'},
+
+  {kind:'end', t:'Mulai dari mana', pts:[
+    'Pelajaran 0 dulu: buat VPS, login, pasang swap. Tanpa server, sisa modul tidak jalan.',
+    'Jangan lompat modul: perintah modul 1 dipakai terus sampai modul 5.',
+    'Setiap modul berakhir dengan praktik — selesaikan sebelum lanjut.',
+    'Simpan catatan: runbook-server.md, catatan-nginx.md, catatan-docker.md, catatan-cicd.md.'],
+   foot:'Materi lengkap: curriculum/syllabus.md · lessons/01–05 · assessment/bank-soal.md'}
+];
+
+/* ============================ bootstrap ============================ */
+const deck = document.getElementById('deck');
+const grid = document.getElementById('grid');
+const bar = document.getElementById('bar');
+const count = document.getElementById('count');
+const dots = document.getElementById('dots');
+const prev = document.getElementById('prev');
+const next = document.getElementById('next');
+
+const esc = (s) => s.replace(/&(?!(amp|lt|gt|quot|#\d+);)/g, '&amp;');
+const slideTag = (i) => String(i + 1).padStart(2, '0');
+
+let idx = 0;
+
+function render() {
+  DECK.forEach((s, i) => {
+    const el = document.createElement('section');
+    el.className = 'slide';
+    el.id = 's' + (i + 1);
+    el.setAttribute('aria-hidden', 'true');
+
+    if (s.kind === 'hero') {
+      el.classList.add('hero-slide');
+      el.innerHTML = `
+        <div class="slide-head"><b>DevOps dari Nol</b><span>Kursus ${esc(s.meta[0][1])} kelas · 6 modul</span></div>
+        <div class="body" style="grid-template-columns:1fr">
+          <div class="left" style="grid-column:1/13">
+            <h2 class="brand">DevOps<br><span>dari Nol</span></h2>
+            <p class="lede">${esc(s.lede)}</p>
+            <div class="actions">
+              <button class="btn" data-go="1">Mulai kursus →</button>
+              <button class="btn ghost" data-overview>Lihat semua slide</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="meta-row">${s.meta.map(([k, v]) => `<span><strong>${esc(v)}</strong>${esc(k)}</span>`).join('')}</div>
+          <div class="slide-foot" style="margin-top:18px"><span>${esc(s.sub)}</span><span>${esc(s.foot)}</span></div>
+        </div>`;
+    } else if (s.kind === 'agenda' || s.kind === 'end') {
+      el.innerHTML = `
+        <div class="slide-head"><b>${s.label || (s.kind === 'agenda' ? 'Agenda' : 'Penutup')}</b><span>${slideTag(i)} / ${DECK.length}</span></div>
+        <div class="body" style="grid-template-columns:1fr">
+          <div class="left" style="grid-column:1/13">
+            <h2 class="t">${esc(s.t)}</h2>
+            <ul class="pts">${s.pts.map(p => `<li>${p}</li>`).join('')}</ul>
+          </div>
+        </div>
+        <div class="slide-foot"><span>${esc(s.foot || '')}</span><span>G untuk overview</span></div>`;
+    } else if (s.kind === 'divider') {
+      const m = M[s.mi];
+      el.innerHTML = `
+        <div class="slide-head"><b>${esc(m.n)}</b><span>${esc(m.range)}</span></div>
+        <div class="body">
+          <div class="left">
+            <div class="divider-num">${String(s.mi + 1).padStart(2, '0')}</div>
+            <h2 class="t">${esc(m.t)}</h2>
+            <p class="lede">${esc(m.sub)}</p>
+          </div>
+          <div class="right">
+            <ul class="divider-list">${DECK.filter(d => d.kind === 'lesson' && d.mi === s.mi)
+              .map(d => `<li><b>${esc(d.n.replace('Pelajaran ', ''))}</b>${esc(d.t)}</li>`).join('')}</ul>
+          </div>
+        </div>
+        <div class="slide-foot"><span>${esc(m.n)}</span><span>${slideTag(i)} / ${DECK.length}</span></div>`;
+    } else {
+      const m = M[s.mi];
+      el.innerHTML = `
+        <div class="slide-head"><b>${esc(m.n)}</b><span>${esc(s.n)}</span><span>${slideTag(i)} / ${DECK.length}</span></div>
+        <div class="body">
+          <div class="left">
+            <h2 class="t">${esc(s.t)}</h2>
+            <ul class="pts">${s.pts.map(p => `<li>${p}</li>`).join('')}</ul>
+          </div>
+          <div class="right"><pre>${s.code}</pre></div>
+        </div>
+        <div class="slide-foot"><span>${esc(m.t)}</span><span>${esc(s.n)} · <strong>${esc(s.t)}</strong></span></div>`;
+    }
+    el.addEventListener('click', (e) => {
+      const g = e.target.closest('[data-go]');
+      if (g) { go(Number(g.dataset.go)); return; }
+      if (e.target.closest('[data-overview]')) toggleOverview(true);
+    });
+    deck.appendChild(el);
+  });
+
+  M.forEach((m, mi) => {
+    const b = document.createElement('button');
+    b.className = 'dot';
+    b.title = `${m.n} — ${m.range}: ${m.t}`;
+    b.setAttribute('aria-label', `${m.n}: ${m.t}`);
+    b.addEventListener('click', () => {
+      go(DECK.findIndex(d => d.kind === 'divider' && d.mi === mi));
+    });
+    dots.appendChild(b);
+  });
+
+  DECK.forEach((s, i) => {
+    const title = s.kind === 'divider' ? M[s.mi].t : (s.t || '');
+    const label = s.kind === 'divider' ? M[s.mi].n : (s.kind === 'lesson' ? s.n : (s.kind === 'hero' ? 'Pembuka' : (s.label || (s.kind === 'agenda' ? 'Agenda' : 'Penutup'))));
+    const c = document.createElement('button');
+    c.className = 'card';
+    c.innerHTML = `<small>${esc(label)}</small><b>${esc(title)}</b>`;
+    c.addEventListener('click', () => { go(i); toggleOverview(false); });
+    grid.appendChild(c);
+  });
+}
+
+function go(n) {
+  idx = Math.max(0, Math.min(DECK.length - 1, n));
+  [...deck.children].forEach((el, i) => {
+    const on = i === idx;
+    el.classList.toggle('on', on);
+    el.setAttribute('aria-hidden', String(!on));
+  });
+  [...grid.children].forEach((el, i) => el.classList.toggle('current', i === idx));
+  bar.style.width = ((idx + 1) / DECK.length * 100) + '%';
+  count.textContent = `${idx + 1} / ${DECK.length}`;
+  prev.disabled = idx === 0;
+  next.disabled = idx === DECK.length - 1;
+  const mi = DECK[idx].kind === 'divider' ? DECK[idx].mi : DECK[idx].mi;
+  [...dots.children].forEach((d, i) => d.classList.toggle('on', i === mi));
+  if (location.hash !== '#s' + (idx + 1)) history.replaceState(null, '', '#s' + (idx + 1));
+}
+
+function toggleOverview(on) {
+  const show = on === undefined ? !document.body.classList.contains('overview') : on;
+  document.body.classList.toggle('overview', show);
+}
+
+render();
+const fromHash = parseInt((location.hash.match(/^#s(\d+)$/) || [])[1] || '1', 10);
+go(fromHash - 1);
+
+prev.addEventListener('click', () => go(idx - 1));
+next.addEventListener('click', () => go(idx + 1));
+document.getElementById('closeGrid').addEventListener('click', () => toggleOverview(false));
+
+addEventListener('keydown', (e) => {
+  const k = e.key;
+  if (k === 'Escape') { toggleOverview(false); return; }
+  if (k === 'g' || k === 'G') { toggleOverview(); return; }
+  if (k === 'f' || k === 'F') {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen?.();
+    return;
+  }
+  if (document.body.classList.contains('overview')) return;
+  if (['ArrowRight', ' ', 'PageDown', 'Enter'].includes(k)) { e.preventDefault(); go(idx + 1); }
+  else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); go(idx - 1); }
+  else if (k === 'Home') { e.preventDefault(); go(0); }
+  else if (k === 'End') { e.preventDefault(); go(DECK.length - 1); }
+});
+
+let tx = 0, ty = 0;
+addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, {passive:true});
+addEventListener('touchend', (e) => {
+  const dx = e.changedTouches[0].clientX - tx;
+  const dy = e.changedTouches[0].clientY - ty;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) go(idx + (dx < 0 ? 1 : -1));
+}, {passive:true});
+
+addEventListener('hashchange', () => {
+  const n = parseInt((location.hash.match(/^#s(\d+)$/) || [])[1] || '0', 10);
+  if (n && n - 1 !== idx) go(n - 1);
+});
+</script>
+</body>
+</html>
